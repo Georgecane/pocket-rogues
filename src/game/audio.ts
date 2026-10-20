@@ -27,7 +27,7 @@ export class CozyAudio {
       this.musicGain.connect(this.master);
     }
     if (this.context.state === 'suspended') await this.context.resume();
-    this.master.gain.setTargetAtTime(this.enabled ? 0.7 : 0, this.context.currentTime, 0.08);
+    this.master?.gain.setTargetAtTime(this.enabled ? 0.7 : 0, this.context.currentTime, 0.08);
     if (this.enabled && !this.started) {
       this.started = true;
       this.musicGain?.gain.setTargetAtTime(0.16, this.context.currentTime, 1.2);
