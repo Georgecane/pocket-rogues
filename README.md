@@ -44,6 +44,7 @@ The production site is generated in `dist/` and can be hosted on GitHub Pages or
 - Move the mouse to aim.
 - Hold the primary mouse button to charge; release to shoot.
 - Press Space to shoot at the current aim.
+- Press Escape or use the Pause button to pause or resume.
 - Press R to retry the current stage.
 - After clearing a stage, click a relic card or press 1, 2, or 3.
 - After a run ends, click the game or press Enter to start over.

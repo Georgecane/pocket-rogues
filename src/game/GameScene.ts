@@ -5,7 +5,7 @@ import { createStageBalls, STAGES, TABLE_BOUNDS } from './stages';
 import { chooseUpgradeOffer, upgradeLevel, type UpgradeDefinition, type UpgradeId } from './upgrades';
 
 type Point = { x: number; y: number };
-type RunState = 'playing' | 'upgrade' | 'failed' | 'victory';
+type RunState = 'playing' | 'paused' | 'upgrade' | 'failed' | 'victory';
 
 const W = 960;
 const H = 600;
@@ -35,7 +35,9 @@ export class GameScene extends Phaser.Scene {
   private message = 'AIM WITH YOUR MOUSE';
   private messageUntil = 0;
   private runChip?: HTMLElement;
+  private pauseButton?: HTMLButtonElement;
   private hasEvaluatedShot = true;
+  private readonly handlePauseClick = (): void => this.togglePause();
   private readonly audio = new CozyAudio();
   private dust: Phaser.GameObjects.Arc[] = [];
   private ambientTime = 0;
@@ -58,8 +60,13 @@ export class GameScene extends Phaser.Scene {
         if (label) label.textContent = enabled ? 'Music on' : 'Music off';
       });
     }
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
     this.runChip = document.querySelector<HTMLElement>('.run-chip b') ?? undefined;
+    this.pauseButton = document.querySelector<HTMLButtonElement>('#pause-toggle') ?? undefined;
+    this.pauseButton?.addEventListener('click', this.handlePauseClick);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.audio.destroy();
+      this.pauseButton?.removeEventListener('click', this.handlePauseClick);
+    });
     this.loadStage(1);
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
@@ -84,6 +91,7 @@ export class GameScene extends Phaser.Scene {
       this.charging = false;
       this.shoot();
     });
+    this.input.keyboard?.on('keydown-ESC', () => this.togglePause());
     this.input.keyboard?.on('keydown-R', () => this.restartStage());
     this.input.keyboard?.on('keydown-SPACE', () => {
       if (this.state === 'playing' && allBallsStopped(this.balls)) this.shoot();
@@ -141,6 +149,7 @@ export class GameScene extends Phaser.Scene {
     this.charge = 0;
     this.charging = false;
     this.state = 'playing';
+    this.syncPauseButton();
     this.hasEvaluatedShot = true;
     this.message = stage.name;
     this.messageUntil = this.time.now + 1500;
@@ -156,6 +165,23 @@ export class GameScene extends Phaser.Scene {
         fontFamily: 'monospace', fontSize: '8px', color: '#342a20', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(25).setVisible(false),
     );
+  }
+
+  private togglePause(): void {
+    if (this.state !== 'playing' && this.state !== 'paused') return;
+    this.state = this.state === 'paused' ? 'playing' : 'paused';
+    this.charging = false;
+    this.charge = 0;
+    this.syncPauseButton();
+  }
+
+  private syncPauseButton(): void {
+    if (!this.pauseButton) return;
+    const paused = this.state === 'paused';
+    this.pauseButton.setAttribute('aria-pressed', String(paused));
+    this.pauseButton.setAttribute('aria-label', paused ? 'Resume game' : 'Pause game');
+    const label = this.pauseButton.querySelector<HTMLElement>('.pause-label');
+    if (label) label.textContent = paused ? 'Resume' : 'Pause';
   }
 
   private restartRun(): void {
@@ -389,7 +415,10 @@ export class GameScene extends Phaser.Scene {
 
     g.fillStyle(0x211b15, 0.78);
     g.fillRect(0, 0, W, H);
-    if (this.state === 'upgrade') {
+    if (this.state === 'paused') {
+      this.addOverlayTitle('Take your time.', 'The table will be right here when you are ready.');
+      this.addOverlayText(0, 330, 'PRESS ESC OR TAP RESUME', '#d4dfac', '11px').setOrigin(0.5, 0.5).setX(W / 2);
+    } else if (this.state === 'upgrade') {
       this.addOverlayTitle('Lovely! Table cleared.', 'PICK A LITTLE LUCKY CHARM FOR THE NEXT TABLE');
       this.offers.forEach((offer, index) => {
         const x = 178 + index * 204;
