@@ -113,6 +113,9 @@ export class GameScene extends Phaser.Scene {
           : undefined,
         restitution: Math.min(0.99, 0.91 + upgradeLevel(this.upgrades, 'rails') * 0.025),
         pocketRadius: 19 + upgradeLevel(this.upgrades, 'pockets') * 3,
+        onPocket: () => this.audio.play('pocket'),
+        onRail: () => this.audio.play('rail'),
+        onBallCollision: () => this.audio.play('collision'),
       });
       if (!allBallsStopped(this.balls)) this.hasEvaluatedShot = false;
       if (allBallsStopped(this.balls) && !this.hasEvaluatedShot) this.resolveShot();

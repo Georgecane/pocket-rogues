@@ -20,6 +20,9 @@ export interface PhysicsOptions {
   friction?: number;
   restitution?: number;
   pocketRadius?: number;
+  onPocket?: (ball: Ball) => void;
+  onRail?: (ball: Ball, axis: 'x' | 'y') => void;
+  onBallCollision?: (a: Ball, b: Ball) => void;
 }
 
 export const FRICTION = 0.986;
@@ -63,6 +66,7 @@ export function stepPhysics(
       const pocket = pockets.find((p) => Math.hypot(ball.x - p.x, ball.y - p.y) < pocketRadius + ball.radius * 0.2);
       if (pocket) {
         ball.sunk = true;
+        options.onPocket?.(ball);
         ball.vx = 0;
         ball.vy = 0;
         continue;
@@ -84,23 +88,31 @@ export function stepPhysics(
       if (ball.x - ball.radius < leftRail) {
         ball.x = leftRail + ball.radius;
         ball.vx = Math.abs(ball.vx) * restitution;
+        options.onRail?.(ball, 'x');
       } else if (ball.x + ball.radius > rightRail) {
         ball.x = rightRail - ball.radius;
         ball.vx = -Math.abs(ball.vx) * restitution;
+        options.onRail?.(ball, 'x');
       }
       if (ball.y - ball.radius < topRail) {
         ball.y = topRail + ball.radius;
         ball.vy = Math.abs(ball.vy) * restitution;
+        options.onRail?.(ball, 'y');
       } else if (ball.y + ball.radius > bottomRail) {
         ball.y = bottomRail - ball.radius;
         ball.vy = -Math.abs(ball.vy) * restitution;
+        options.onRail?.(ball, 'y');
       }
     }
-    resolveBallCollisions(balls, restitution);
+    resolveBallCollisions(balls, restitution, options.onBallCollision);
   }
 }
 
-function resolveBallCollisions(balls: Ball[], restitution: number): void {
+function resolveBallCollisions(
+  balls: Ball[],
+  restitution: number,
+  onBallCollision?: (a: Ball, b: Ball) => void,
+): void {
   for (let i = 0; i < balls.length; i += 1) {
     const a = balls[i];
     if (a.sunk) continue;
@@ -129,6 +141,7 @@ function resolveBallCollisions(balls: Ball[], restitution: number): void {
       a.vy -= impulse * ny;
       b.vx += impulse * nx;
       b.vy += impulse * ny;
+      onBallCollision?.(a, b);
     }
   }
 }

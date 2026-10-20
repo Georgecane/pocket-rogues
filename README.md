@@ -10,6 +10,7 @@ Clear an eight-stage run by pocketing every target ball before your shots run ou
 
 - Isometric table projection with six working pockets.
 - Table-space physics: ball collisions, rail rebounds, friction, stop thresholds, and pocket detection.
+- Procedural cozy audio: soft lounge chords, shot and pocket cues, plus rate-limited ball and rail impacts generated with Web Audio. No external audio assets required.
 - Aim with the mouse and hold/release to charge shot power; Space shoots at the current aim.
 - Eight deterministic stage layouts with rising target counts and shot limits.
 - Stage-clear upgrade selection, three choices at a time, and persistent run upgrades.
@@ -52,6 +53,7 @@ The production site is generated in `dist/` and can be hosted on GitHub Pages or
 - `src/game/physics.ts`: deterministic table-space simulation and pocket detection.
 - `src/game/stages.ts`: stage definitions and seeded stage layouts.
 - `src/game/upgrades.ts`: relic definitions and deterministic upgrade offers.
+- `src/game/audio.ts`: procedural lounge music and game sound effects, generated in-browser with Web Audio.
 - `src/game/GameScene.ts`: input, run progression, HUD, rendering, and upgrade selection.
 
 ## License

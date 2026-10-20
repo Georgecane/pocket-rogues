@@ -1,4 +1,4 @@
-type SoundName = 'shot' | 'pocket' | 'charm' | 'win' | 'rail';
+type SoundName = 'shot' | 'pocket' | 'charm' | 'win' | 'rail' | 'collision';
 
 export class CozyAudio {
   private context?: AudioContext;
@@ -8,6 +8,7 @@ export class CozyAudio {
   private started = false;
   private timer?: number;
   private step = 0;
+  private lastImpactAt = 0;
   private readonly progression = [
     [261.63, 329.63, 392, 493.88],
     [220, 261.63, 329.63, 392],
@@ -62,6 +63,10 @@ export class CozyAudio {
   play(name: SoundName): void {
     if (!this.context || !this.master || this.context.state !== 'running') return;
     const now = this.context.currentTime;
+    if (name === 'rail' || name === 'collision') {
+      if (now - this.lastImpactAt < 0.065) return;
+      this.lastImpactAt = now;
+    }
     if (name === 'shot') {
       this.note(185, now, 0.11, 0.24, 'triangle', this.master, 0.12);
       this.note(92, now, 0.08, 0.12, 'sine', this.master, 0.1);
@@ -72,8 +77,12 @@ export class CozyAudio {
       [523.25, 659.25, 783.99].forEach((hz, i) => this.note(hz, now + i * 0.085, 0.32, 0.065, 'sine', this.master!, 0.22));
     } else if (name === 'win') {
       [392, 493.88, 587.33, 783.99].forEach((hz, i) => this.note(hz, now + i * 0.12, 0.55, 0.07, 'triangle', this.master!, 0.3));
+    } else if (name === 'collision') {
+      this.note(340, now, 0.055, 0.045, 'triangle', this.master, 0.004);
+      this.note(175, now + 0.008, 0.07, 0.025, 'sine', this.master, 0.006);
     } else {
-      this.note(125, now, 0.09, 0.08, 'triangle', this.master, 0.08);
+      this.note(125, now, 0.09, 0.08, 'triangle', this.master, 0.008);
+      this.note(74, now + 0.006, 0.1, 0.035, 'sine', this.master, 0.01);
     }
   }
 
