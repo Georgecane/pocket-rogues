@@ -11,13 +11,17 @@
     <div id="app">
       <header class="topbar">
         <div class="brand"><span class="brand-mark">PR</span><div><strong>POCKET ROGUES</strong><small>PIXEL BILLIARDS LAB</small></div></div>
-        <div class="status"><span class="status-dot"></span> PROTOTYPE 0.1</div>
+        <div class="status"><span class="status-dot"></span> RUN MODE / 8 STAGES</div>
       </header>
       <main class="game-shell">
-        <section class="game-heading"><div><p class="eyebrow">RUN 001 / TABLE 01</p><h1>One more shot.</h1><p class="subtitle">Aim. Strike. Adapt. Survive the run.</p></div><div class="run-chip">STAGE <b>01</b><span>/ 08</span></div></section>
+        <section class="game-heading"><div><p class="eyebrow">ROGUELIKE RUN / TABLE TO TABLE</p><h1>One more shot.</h1><p class="subtitle">Sink every ball. Spend shots wisely. Build a stronger run.</p></div><div class="run-chip">STAGE <b>01</b><span>/ 08</span></div></section>
         <div id="game" aria-label="Pocket Rogues game canvas"></div>
-        <section class="controls"><div><span class="key">MOVE</span><p>Move the mouse to aim</p></div><div><span class="key">SHOOT</span><p>Hold click to charge, release to strike</p></div><div><span class="key">RESET</span><p>Press R to reset the table</p></div></section>
-        <footer><span>PHASER + TYPESCRIPT</span><span>BUILT FOR THE LONG RUN</span></footer>
+        <section class="controls">
+          <div><span class="key">AIM & SHOOT</span><p>Move mouse to aim. Hold click to charge, release to shoot.</p></div>
+          <div><span class="key">POWER</span><p>Charge longer for a harder shot. Space fires at the current aim.</p></div>
+          <div><span class="key">RUN</span><p>Choose one relic after each clear. Press R to retry the current stage.</p></div>
+        </section>
+        <footer><span>PHASER + TYPESCRIPT</span><span>8 STAGES · 6 RELICS · ONE RUN</span></footer>
       </main>
     </div>
     <script type="module" src="/src/main.ts"></script>
