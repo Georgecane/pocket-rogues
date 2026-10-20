@@ -98,12 +98,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    const style = { fontFamily: 'monospace', fontSize: '10px', color: '#9de5c6', letterSpacing: 1 };
+    const style = { fontFamily: 'monospace', fontSize: '10px', color: '#d4dfac', letterSpacing: 1 };
     this.hud.status = this.add.text(28, 82, '', style).setDepth(100);
-    this.hud.stage = this.add.text(28, 100, '', { ...style, color: '#a9b7b9' }).setDepth(100);
-    this.hud.shots = this.add.text(28, 118, '', { ...style, color: '#a9b7b9' }).setDepth(100);
-    this.hud.objective = this.add.text(28, 136, '', { ...style, fontSize: '9px', color: '#e6c77a' }).setDepth(100);
-    this.hud.upgrades = this.add.text(932, 28, '', { ...style, fontSize: '9px', color: '#a9b7b9', align: 'right' }).setOrigin(1, 0).setDepth(100);
+    this.hud.stage = this.add.text(28, 100, '', { ...style, color: '#d4c2a7' }).setDepth(100);
+    this.hud.shots = this.add.text(28, 118, '', { ...style, color: '#d4c2a7' }).setDepth(100);
+    this.hud.objective = this.add.text(28, 136, '', { ...style, fontSize: '9px', color: '#e8c58e' }).setDepth(100);
+    this.hud.upgrades = this.add.text(932, 28, '', { ...style, fontSize: '9px', color: '#d4c2a7', align: 'right' }).setOrigin(1, 0).setDepth(100);
   }
 
   private loadStage(number: number): void {
@@ -127,7 +127,7 @@ export class GameScene extends Phaser.Scene {
     this.ballLabels.forEach((label) => label.destroy());
     this.ballLabels = this.balls.map((ball) =>
       this.add.text(0, 0, String(ball.number), {
-        fontFamily: 'monospace', fontSize: '8px', color: '#172026', fontStyle: 'bold',
+        fontFamily: 'monospace', fontSize: '8px', color: '#342a20', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(25).setVisible(false),
     );
   }
@@ -188,7 +188,7 @@ export class GameScene extends Phaser.Scene {
       } else {
         this.state = 'upgrade';
         this.offers = chooseUpgradeOffer(this.stageNumber, this.upgrades);
-        this.message = 'TABLE CLEARED';
+        this.message = 'Lovely! Table cleared.';
       }
       this.messageUntil = this.time.now + 2400;
     } else if (this.shotsRemaining <= 0) {
@@ -237,30 +237,30 @@ export class GameScene extends Phaser.Scene {
   private paintStaticScene(): void {
     const g = this.staticGraphics;
     g.clear();
-    g.lineStyle(1, 0x1a2830, 0.42);
+    g.lineStyle(1, 0x5c5b42, 0.28);
     for (let x = 0; x < W; x += 24) g.lineBetween(x, 0, x, H);
     for (let y = 0; y < H; y += 24) g.lineBetween(0, y, W, y);
     const corners = [this.project(TABLE.left, TABLE.top), this.project(TABLE.right, TABLE.top), this.project(TABLE.right, TABLE.bottom), this.project(TABLE.left, TABLE.bottom)];
-    g.fillStyle(0x05090c, 0.6);
+    g.fillStyle(0x100e0b, 0.34);
     g.fillPoints(corners.map((p) => ({ x: p.x + 9, y: p.y + 22 })), true);
-    g.fillStyle(0x4a2b22, 1);
+    g.fillStyle(0x6d4932, 1);
     g.fillPoints(corners, true);
-    g.lineStyle(8, 0x98613c, 1);
+    g.lineStyle(9, 0xa77a4e, 1);
     g.strokePoints(corners, true);
     const inset = [this.project(TABLE.left + 18, TABLE.top + 18), this.project(TABLE.right - 18, TABLE.top + 18), this.project(TABLE.right - 18, TABLE.bottom - 18), this.project(TABLE.left + 18, TABLE.bottom - 18)];
-    g.fillStyle(0x176b58, 1);
+    g.fillStyle(0x456b50, 1);
     g.fillPoints(inset, true);
-    g.lineStyle(3, 0x2f9a78, 1);
+    g.lineStyle(3, 0x81966a, 1);
     g.strokePoints(inset, true);
     for (const pocket of pocketCenters(TABLE)) {
       const p = this.project(pocket.x, pocket.y);
-      g.fillStyle(0x10151b, 1);
+      g.fillStyle(0x211c17, 1);
       g.fillCircle(p.x, p.y, pocket.x === (TABLE.left + TABLE.right) / 2 ? 8 : 10);
-      g.lineStyle(2, 0x0a1715, 1);
+      g.lineStyle(2, 0x9d7954, 0.8);
       g.strokeCircle(p.x, p.y, pocket.x === (TABLE.left + TABLE.right) / 2 ? 8 : 10);
     }
-    this.add.text(28, 28, 'POCKET ROGUES', { fontFamily: 'monospace', fontSize: '14px', color: '#9de5c6', letterSpacing: 2 }).setDepth(100);
-    this.add.text(28, 49, 'ROGUELIKE BILLIARDS / RUN MODE', { fontFamily: 'monospace', fontSize: '9px', color: '#6b8790', letterSpacing: 1 }).setDepth(100);
+    this.add.text(28, 28, 'POCKET ROGUES', { fontFamily: 'monospace', fontSize: '14px', color: '#d4dfac', letterSpacing: 2 }).setDepth(100);
+    this.add.text(28, 49, 'ROGUELIKE BILLIARDS / RUN MODE', { fontFamily: 'monospace', fontSize: '9px', color: '#c0a987', letterSpacing: 1 }).setDepth(100);
   }
 
   private drawDynamicScene(): void {
@@ -273,9 +273,9 @@ export class GameScene extends Phaser.Scene {
       const target = this.project(this.aimPoint.x, this.aimPoint.y);
       const guide = upgradeLevel(this.upgrades, 'sight') > 0 ? 1.8 : 1;
       const end = { x: origin.x + (target.x - origin.x) * guide, y: origin.y + (target.y - origin.y) * guide };
-      g.lineStyle(1, 0xe7f4d6, 0.68);
+      g.lineStyle(1, 0xf4e5bd, 0.72);
       g.lineBetween(origin.x, origin.y, end.x, end.y);
-      g.fillStyle(0xe7f4d6, 0.8);
+      g.fillStyle(0xf4e5bd, 0.85);
       g.fillCircle(target.x, target.y, 3);
     }
 
@@ -283,7 +283,7 @@ export class GameScene extends Phaser.Scene {
     for (const { ball, label } of ordered) {
       const p = this.project(ball.x, ball.y);
       const r = Math.max(5, ball.radius * 0.82);
-      g.fillStyle(0x06100e, 0.42);
+      g.fillStyle(0x17130f, 0.28);
       g.fillEllipse(p.x + 3, p.y + 5, r * 2, r * 1.25);
       g.fillStyle(ball.color, 1);
       g.fillCircle(p.x, p.y, r);
@@ -311,16 +311,16 @@ export class GameScene extends Phaser.Scene {
     this.hud.stage.setText('STAGE ' + String(this.stageNumber).padStart(2, '0') + ' / ' + STAGES.length + '  ' + stage.name);
     this.hud.shots.setText('SHOTS ' + this.shotCount + '   LEFT ' + this.shotsRemaining + '   TARGETS ' + remaining);
     this.hud.objective.setText(stage.objective);
-    this.hud.upgrades.setText(this.upgrades.length ? 'RELICS: ' + this.upgrades.map((id) => id.toUpperCase()).join(' / ') : 'RELICS: NONE');
+    this.hud.upgrades.setText(this.upgrades.length ? 'LUCKY CHARMS: ' + this.upgrades.map((id) => id.toUpperCase()).join(' / ') : 'LUCKY CHARMS: NONE');
     this.drawPowerBar();
     this.drawOverlay();
   }
 
   private drawPowerBar(): void {
     const g = this.dynamicGraphics;
-    g.fillStyle(0x293a3c, 1);
+    g.fillStyle(0x514438, 1);
     g.fillRect(82, 570, 130, 8);
-    g.fillStyle(0x9de5c6, 1);
+    g.fillStyle(0xd4dfac, 1);
     g.fillRect(82, 570, 130 * this.charge, 8);
   }
 
@@ -333,36 +333,36 @@ export class GameScene extends Phaser.Scene {
     g.clear();
     if (this.state === 'playing') return;
 
-    g.fillStyle(0x071014, 0.82);
+    g.fillStyle(0x211b15, 0.78);
     g.fillRect(0, 0, W, H);
     if (this.state === 'upgrade') {
-      this.addOverlayTitle('TABLE CLEARED', 'CHOOSE ONE RELIC TO CARRY INTO THE NEXT STAGE');
+      this.addOverlayTitle('Lovely! Table cleared.', 'PICK A LITTLE LUCKY CHARM FOR THE NEXT TABLE');
       this.offers.forEach((offer, index) => {
         const x = 178 + index * 204;
-        g.fillStyle(0x15242a, 1);
+        g.fillStyle(0x393126, 1);
         g.fillRoundedRect(x, 222, 190, 180, 8);
         g.lineStyle(2, offer.color, 1);
         g.strokeRoundedRect(x, 222, 190, 180, 8);
         g.fillStyle(offer.color, 1);
         g.fillRect(x + 14, 242, 30, 4);
         this.addOverlayText(x + 14, 263, String(index + 1) + ' / ' + offer.name, '#e9f1e7', '11px');
-        this.addOverlayText(x + 14, 302, offer.description, '#9de5c6', '10px');
-        this.addOverlayText(x + 14, 338, offer.detail, '#8da2a2', '9px');
-        this.addOverlayText(x + 14, 374, 'CLICK OR PRESS ' + (index + 1), '#e6c77a', '8px');
+        this.addOverlayText(x + 14, 302, offer.description, '#d4dfac', '10px');
+        this.addOverlayText(x + 14, 338, offer.detail, '#c0ae94', '9px');
+        this.addOverlayText(x + 14, 374, 'CLICK OR PRESS ' + (index + 1), '#e8c58e', '8px');
       });
     } else if (this.state === 'failed') {
-      this.addOverlayTitle('RUN OVER', 'YOU RAN OUT OF SHOTS. TRY THE TABLE AGAIN.');
-      this.addOverlayText(340, 340, 'CLICK ANYWHERE OR PRESS ENTER TO RESTART', '#9de5c6', '11px');
-      this.addOverlayText(420, 380, 'PRESS R TO RETRY THIS STAGE', '#8da2a2', '9px');
+      this.addOverlayTitle('NO WORRIES, TRY AGAIN', 'Out of shots this time. Every table is a fresh chance.');
+      this.addOverlayText(340, 340, 'CLICK ANYWHERE OR PRESS ENTER TO RESTART', '#d4dfac', '11px');
+      this.addOverlayText(420, 380, 'PRESS R TO RETRY THIS STAGE', '#c0ae94', '9px');
     } else {
-      this.addOverlayTitle('ROGUE CHAMPION', 'ALL EIGHT STAGES CLEARED. THE TABLES ARE YOURS.');
-      this.addOverlayText(350, 350, 'CLICK ANYWHERE OR PRESS ENTER FOR A NEW RUN', '#9de5c6', '10px');
+      this.addOverlayTitle('WHAT A LOVELY RUN!', 'All eight tables cleared. You deserve a cup of tea.');
+      this.addOverlayText(350, 350, 'CLICK ANYWHERE OR PRESS ENTER FOR A NEW RUN', '#d4dfac', '10px');
     }
   }
 
   private addOverlayTitle(title: string, subtitle: string): void {
-    this.addOverlayText(0, 145, title, '#9de5c6', '22px').setOrigin(0.5, 0.5).setX(W / 2);
-    this.addOverlayText(0, 183, subtitle, '#a9b7b9', '9px').setOrigin(0.5, 0.5).setX(W / 2);
+    this.addOverlayText(0, 145, title, '#d4dfac', '22px').setOrigin(0.5, 0.5).setX(W / 2);
+    this.addOverlayText(0, 183, subtitle, '#d4c2a7', '9px').setOrigin(0.5, 0.5).setX(W / 2);
   }
 
   private addOverlayText(x: number, y: number, value: string, color: string, fontSize: string): Phaser.GameObjects.Text {
