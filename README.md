@@ -10,7 +10,7 @@ Clear an eight-stage run by pocketing every target ball before your shots run ou
 
 - Isometric table projection with six working pockets.
 - Table-space physics: ball collisions, rail rebounds, friction, stop thresholds, and pocket detection.
-- Procedural cozy audio: soft lounge chords, shot and pocket cues, plus rate-limited ball and rail impacts generated with Web Audio. No external audio assets required.
+- Procedural cozy audio: soft lounge chords, shot and pocket cues, plus rate-limited ball and rail impacts generated with Web Audio. The Sound toggle mutes and restores both music and effects. No external audio assets required.
 - Aim with the mouse and hold/release to charge shot power; Space shoots at the current aim.
 - Eight deterministic stage layouts with rising target counts and shot limits.
 - Stage-clear upgrade selection, three choices at a time, and persistent run upgrades.

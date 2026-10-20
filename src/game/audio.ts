@@ -27,6 +27,7 @@ export class CozyAudio {
       this.musicGain.connect(this.master);
     }
     if (this.context.state === 'suspended') await this.context.resume();
+    this.master.gain.setTargetAtTime(this.enabled ? 0.7 : 0, this.context.currentTime, 0.08);
     if (this.enabled && !this.started) {
       this.started = true;
       this.musicGain?.gain.setTargetAtTime(0.16, this.context.currentTime, 1.2);
@@ -38,8 +39,10 @@ export class CozyAudio {
     this.enabled = !this.enabled;
     await this.unlock();
     const now = this.context!.currentTime;
+    this.master!.gain.cancelScheduledValues(now);
+    this.master!.gain.setTargetAtTime(this.enabled ? 0.7 : 0, now, 0.08);
     this.musicGain!.gain.cancelScheduledValues(now);
-    this.musicGain!.gain.setTargetAtTime(this.enabled ? 0.16 : 0, now, 0.18);
+    this.musicGain!.gain.setTargetAtTime(this.enabled && this.started ? 0.16 : 0, now, 0.18);
     return this.enabled;
   }
 
@@ -61,7 +64,7 @@ export class CozyAudio {
   }
 
   play(name: SoundName): void {
-    if (!this.context || !this.master || this.context.state !== 'running') return;
+    if (!this.enabled || !this.context || !this.master || this.context.state !== 'running') return;
     const now = this.context.currentTime;
     if (name === 'rail' || name === 'collision') {
       if (now - this.lastImpactAt < 0.065) return;
