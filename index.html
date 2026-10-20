@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10151b" />
+    <meta name="description" content="Pocket Rogues: an isometric pixel-art roguelike billiards game." />
+    <title>Pocket Rogues</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark">PR</span><div><strong>POCKET ROGUES</strong><small>PIXEL BILLIARDS LAB</small></div></div>
+        <div class="status"><span class="status-dot"></span> PROTOTYPE 0.1</div>
+      </header>
+      <main class="game-shell">
+        <section class="game-heading"><div><p class="eyebrow">RUN 001 / TABLE 01</p><h1>One more shot.</h1><p class="subtitle">Aim. Strike. Adapt. Survive the run.</p></div><div class="run-chip">STAGE <b>01</b><span>/ 08</span></div></section>
+        <div id="game" aria-label="Pocket Rogues game canvas"></div>
+        <section class="controls"><div><span class="key">MOVE</span><p>Move the mouse to aim</p></div><div><span class="key">SHOOT</span><p>Hold click to charge, release to strike</p></div><div><span class="key">RESET</span><p>Press R to reset the table</p></div></section>
+        <footer><span>PHASER + TYPESCRIPT</span><span>BUILT FOR THE LONG RUN</span></footer>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
