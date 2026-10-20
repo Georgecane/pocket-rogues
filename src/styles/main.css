@@ -1,0 +1,27 @@
+:root { color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #10151b; color: #edf2e9; font-synthesis: none; text-rendering: optimizeLegibility; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(ellipse at 50% 0%, #1b2a2d 0%, #10151b 58%); }
+#app { width: min(1100px, 100%); margin: 0 auto; padding: 24px clamp(12px, 3vw, 32px) 20px; }
+.topbar, .brand, .status, .game-heading, .controls, footer { display: flex; align-items: center; justify-content: space-between; }
+.topbar { padding: 4px 0 24px; border-bottom: 1px solid #29383b; }
+.brand { justify-content: flex-start; gap: 12px; }
+.brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border: 2px solid #9de5c6; color: #9de5c6; font-weight: 900; font-size: 13px; box-shadow: 4px 4px 0 #28473e; }
+.brand strong, .brand small { display: block; letter-spacing: 1.4px; }
+.brand strong { font-size: 13px; }
+.brand small { color: #7b9294; font-size: 9px; margin-top: 5px; }
+.status { gap: 8px; color: #93aaa5; font-size: 10px; letter-spacing: 1px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #9de5c6; box-shadow: 0 0 10px #9de5c680; }
+.game-heading { padding: 28px 0 20px; gap: 12px; }
+.eyebrow { margin: 0 0 8px; color: #9de5c6; font-size: 10px; letter-spacing: 1.6px; }
+h1 { margin: 0; font-size: clamp(24px, 4vw, 38px); letter-spacing: -1.6px; }
+.subtitle { margin: 8px 0 0; color: #8da2a2; font-size: 12px; }
+.run-chip { padding: 10px 12px; border: 1px solid #344648; color: #92aaa8; font-size: 10px; white-space: nowrap; }
+.run-chip b { color: #9de5c6; font-size: 15px; padding: 0 4px; }
+#game { overflow: hidden; width: 100%; border: 1px solid #344648; background: #111920; box-shadow: 0 14px 45px #0005; }
+#game canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.controls { align-items: stretch; gap: 12px; padding: 18px 0; }
+.controls > div { flex: 1; padding: 12px; border: 1px solid #29383b; background: #141d23; }
+.key { color: #9de5c6; font-size: 9px; letter-spacing: 1px; }
+.controls p { margin: 7px 0 0; color: #b5c2bc; font-size: 10px; line-height: 1.5; }
+footer { padding-top: 15px; border-top: 1px solid #29383b; color: #657b7d; font-size: 9px; letter-spacing: 1px; }
+@media (max-width: 560px) { .status { font-size: 8px; } .controls { flex-direction: column; } .game-heading { align-items: flex-start; } footer { font-size: 8px; } }
