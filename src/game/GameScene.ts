@@ -381,6 +381,7 @@ export class GameScene extends Phaser.Scene {
     const remaining = this.balls.filter((ball) => ball.number > 0 && !ball.sunk).length;
     const status = this.time.now < this.messageUntil ? this.message
       : this.state === 'playing' ? (moving ? 'BALLS IN MOTION' : 'READY TO SHOOT')
+      : this.state === 'paused' ? 'TAKE A BREATHER'
       : this.state === 'upgrade' ? 'CHOOSE AN UPGRADE'
       : this.state === 'failed' ? 'RUN ENDED' : 'CHAMPION';
     this.hud.status.setText(status);
