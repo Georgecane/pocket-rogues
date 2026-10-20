@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { CozyAudio } from './audio';
 import { allBallsStopped, pocketCenters, stepPhysics, type Ball } from './physics';
 import { createStageBalls, STAGES, TABLE_BOUNDS } from './stages';
 import { chooseUpgradeOffer, upgradeLevel, type UpgradeDefinition, type UpgradeId } from './upgrades';
@@ -35,6 +36,9 @@ export class GameScene extends Phaser.Scene {
   private messageUntil = 0;
   private runChip?: HTMLElement;
   private hasEvaluatedShot = true;
+  private readonly audio = new CozyAudio();
+  private dust: Phaser.GameObjects.Arc[] = [];
+  private ambientTime = 0;
 
   constructor() { super('GameScene'); }
 
@@ -43,7 +47,18 @@ export class GameScene extends Phaser.Scene {
     this.dynamicGraphics = this.add.graphics();
     this.overlayGraphics = this.add.graphics().setDepth(80);
     this.createHud();
+    this.createAmbient();
     this.paintStaticScene();
+    const musicButton = document.querySelector<HTMLButtonElement>('#music-toggle');
+    if (musicButton) {
+      musicButton.addEventListener('click', async () => {
+        const enabled = await this.audio.toggle();
+        musicButton.setAttribute('aria-pressed', String(enabled));
+        const label = musicButton.querySelector<HTMLElement>('.music-label');
+        if (label) label.textContent = enabled ? 'Music on' : 'Music off';
+      });
+    }
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.audio.destroy());
     this.runChip = document.querySelector<HTMLElement>('.run-chip b') ?? undefined;
     this.loadStage(1);
 
@@ -51,6 +66,7 @@ export class GameScene extends Phaser.Scene {
       this.aimPoint = this.screenToTable(pointer.x, pointer.y);
     });
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      void this.audio.unlock();
       if (this.state === 'upgrade') {
         this.pickUpgradeAt(pointer.x, pointer.y);
         return;
@@ -82,6 +98,13 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, deltaMs: number): void {
     const dt = Math.min(deltaMs / 1000, 1 / 30);
+    this.ambientTime += dt;
+    this.dust.forEach((particle, index) => {
+      particle.y -= dt * (4 + (index % 4));
+      particle.x += Math.sin(this.ambientTime * 0.7 + index) * dt * 2;
+      particle.setAlpha(0.12 + (Math.sin(this.ambientTime * 1.7 + index * 1.9) + 1) * 0.16);
+      if (particle.y < 12) particle.setPosition(35 + ((index * 137) % 890), 565 + (index % 23));
+    });
     if (this.state === 'playing') {
       if (this.charging) this.charge = Math.min(1, this.charge + dt * 0.65);
       stepPhysics(this.balls, TABLE, dt, {
@@ -157,6 +180,7 @@ export class GameScene extends Phaser.Scene {
     dy /= length;
     const power = 180 + this.charge * 470;
     const multiplier = 1 + upgradeLevel(this.upgrades, 'power') * 0.22;
+    this.audio.play('shot');
     cue.vx = dx * power * multiplier;
     cue.vy = dy * power * multiplier;
     this.charge = 0;
@@ -182,6 +206,7 @@ export class GameScene extends Phaser.Scene {
     }
     const remaining = this.balls.filter((ball) => ball.number > 0 && !ball.sunk).length;
     if (remaining === 0) {
+      this.audio.play(this.stageNumber >= STAGES.length ? 'win' : 'pocket');
       if (this.stageNumber >= STAGES.length) {
         this.state = 'victory';
         this.message = 'RUN COMPLETE';
@@ -204,6 +229,7 @@ export class GameScene extends Phaser.Scene {
 
   private chooseUpgrade(index: number): void {
     if (this.state !== 'upgrade' || !this.offers[index]) return;
+    this.audio.play('charm');
     this.upgrades.push(this.offers[index].id);
     this.loadStage(this.stageNumber + 1);
     this.message = 'UPGRADE: ' + this.offers[index].name;
@@ -234,12 +260,26 @@ export class GameScene extends Phaser.Scene {
     };
   }
 
+  private createAmbient(): void {
+    for (let i = 0; i < 30; i += 1) {
+      const particle = this.add.circle(30 + ((i * 137) % 900), 45 + ((i * 79) % 510),
+        i % 5 === 0 ? 1.7 : 1, i % 3 === 0 ? 0xffd89b : 0xf3e8c8, 0.2).setDepth(4);
+      this.dust.push(particle);
+    }
+  }
+
   private paintStaticScene(): void {
     const g = this.staticGraphics;
     g.clear();
     g.lineStyle(1, 0x5c5b42, 0.28);
     for (let x = 0; x < W; x += 24) g.lineBetween(x, 0, x, H);
     for (let y = 0; y < H; y += 24) g.lineBetween(0, y, W, y);
+    for (const lamp of [{ x: 112, y: 76 }, { x: 846, y: 76 }]) {
+      g.fillStyle(0xe9b96d, 0.025); g.fillCircle(lamp.x, lamp.y, 68);
+      g.fillStyle(0xe9b96d, 0.045); g.fillCircle(lamp.x, lamp.y, 42);
+      g.fillStyle(0xffd99a, 0.22); g.fillCircle(lamp.x, lamp.y, 16);
+      g.fillStyle(0xffe8bd, 0.85); g.fillCircle(lamp.x, lamp.y, 4);
+    }
     const corners = [this.project(TABLE.left, TABLE.top), this.project(TABLE.right, TABLE.top), this.project(TABLE.right, TABLE.bottom), this.project(TABLE.left, TABLE.bottom)];
     g.fillStyle(0x100e0b, 0.34);
     g.fillPoints(corners.map((p) => ({ x: p.x + 9, y: p.y + 22 })), true);
@@ -273,6 +313,8 @@ export class GameScene extends Phaser.Scene {
       const target = this.project(this.aimPoint.x, this.aimPoint.y);
       const guide = upgradeLevel(this.upgrades, 'sight') > 0 ? 1.8 : 1;
       const end = { x: origin.x + (target.x - origin.x) * guide, y: origin.y + (target.y - origin.y) * guide };
+      g.lineStyle(3, 0xf4e5bd, 0.08);
+      g.lineBetween(origin.x, origin.y, end.x, end.y);
       g.lineStyle(1, 0xf4e5bd, 0.72);
       g.lineBetween(origin.x, origin.y, end.x, end.y);
       g.fillStyle(0xf4e5bd, 0.85);
@@ -286,6 +328,11 @@ export class GameScene extends Phaser.Scene {
       g.fillStyle(0x17130f, 0.28);
       g.fillEllipse(p.x + 3, p.y + 5, r * 2, r * 1.25);
       g.fillStyle(ball.color, 1);
+      if (ball.number === 0) {
+        g.fillStyle(0xffe6a8, 0.1);
+        g.fillCircle(p.x, p.y, r * 1.9);
+        g.fillStyle(ball.color, 1);
+      }
       g.fillCircle(p.x, p.y, r);
       g.fillStyle(0xffffff, 0.8);
       g.fillRect(p.x - r * 0.4, p.y - r * 0.45, Math.max(2, r * 0.35), Math.max(2, r * 0.22));
@@ -320,8 +367,12 @@ export class GameScene extends Phaser.Scene {
     const g = this.dynamicGraphics;
     g.fillStyle(0x514438, 1);
     g.fillRect(82, 570, 130, 8);
+    g.fillStyle(0xd4dfac, 0.12);
+    g.fillRoundedRect(78, 566, 138, 16, 8);
     g.fillStyle(0xd4dfac, 1);
-    g.fillRect(82, 570, 130 * this.charge, 8);
+    g.fillRoundedRect(82, 570, Math.max(2, 130 * this.charge), 8, 4);
+    g.lineStyle(1, 0xb5c99b, 0.35);
+    g.strokeRoundedRect(82, 570, 130, 8, 4);
   }
 
   private drawOverlay(): void {
