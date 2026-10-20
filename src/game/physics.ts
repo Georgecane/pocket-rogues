@@ -63,14 +63,7 @@ export function stepPhysics(
       ball.x += ball.vx * subDt;
       ball.y += ball.vy * subDt;
 
-      const pocket = pockets.find((p) => Math.hypot(ball.x - p.x, ball.y - p.y) < pocketRadius + ball.radius * 0.2);
-      if (pocket) {
-        ball.sunk = true;
-        options.onPocket?.(ball);
-        ball.vx = 0;
-        ball.vy = 0;
-        continue;
-      }
+      if (capturesAtPocket(ball, pockets, pocketRadius, options.onPocket)) continue;
 
       const drag = Math.pow(friction, subDt * 60);
       ball.vx *= drag;
@@ -105,7 +98,29 @@ export function stepPhysics(
       }
     }
     resolveBallCollisions(balls, restitution, options.onBallCollision);
+    // Collision separation can push a resting ball into a pocket capture zone.
+    // Sweep pockets again so the capture (and its callback) is not deferred to
+    // a later step, which would leave gameplay state out of sync.
+    for (const ball of balls) {
+      if (ball.sunk) continue;
+      capturesAtPocket(ball, pockets, pocketRadius, options.onPocket);
+    }
   }
+}
+
+function capturesAtPocket(
+  ball: Ball,
+  pockets: Array<{ x: number; y: number }>,
+  pocketRadius: number,
+  onPocket?: (ball: Ball) => void,
+): boolean {
+  const pocket = pockets.find((p) => Math.hypot(ball.x - p.x, ball.y - p.y) < pocketRadius + ball.radius * 0.2);
+  if (!pocket) return false;
+  ball.sunk = true;
+  onPocket?.(ball);
+  ball.vx = 0;
+  ball.vy = 0;
+  return true;
 }
 
 function resolveBallCollisions(

@@ -37,10 +37,33 @@ export class GameScene extends Phaser.Scene {
   private runChip?: HTMLElement;
   private pauseButton?: HTMLButtonElement;
   private hasEvaluatedShot = true;
-  private readonly handlePauseClick = (): void => this.togglePause();
+  private readonly handlePauseClick = (): void => {
+    void this.audio.unlock();
+    this.togglePause();
+  };
+  private readonly handleWindowPointerUp = (event: PointerEvent): void => {
+    // Phaser delivers releases that happen on the canvas itself, so only cancel
+    // the charged shot when the pointer was released elsewhere (never reaching
+    // Phaser's input system) to avoid getting stuck mid-charge.
+    const canvas = this.game?.canvas;
+    if (canvas && event.target === canvas) return;
+    this.charging = false;
+    this.charge = 0;
+  };
+  private readonly handlePointerCancel = (): void => {
+    this.charging = false;
+    this.charge = 0;
+  };
+  private readonly handleWindowBlur = (): void => {
+    this.charging = false;
+    this.charge = 0;
+  };
   private readonly audio = new CozyAudio();
   private dust: Phaser.GameObjects.Arc[] = [];
   private ambientTime = 0;
+  private pocketRipples: Array<{ x: number; y: number; at: number }> = [];
+  private readonly reducedMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   constructor() { super('GameScene'); }
 
@@ -63,9 +86,15 @@ export class GameScene extends Phaser.Scene {
     this.runChip = document.querySelector<HTMLElement>('.run-chip b') ?? undefined;
     this.pauseButton = document.querySelector<HTMLButtonElement>('#pause-toggle') ?? undefined;
     this.pauseButton?.addEventListener('click', this.handlePauseClick);
+    window.addEventListener('pointerup', this.handleWindowPointerUp);
+    window.addEventListener('pointercancel', this.handlePointerCancel);
+    window.addEventListener('blur', this.handleWindowBlur);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.audio.destroy();
       this.pauseButton?.removeEventListener('click', this.handlePauseClick);
+      window.removeEventListener('pointerup', this.handleWindowPointerUp);
+      window.removeEventListener('pointercancel', this.handlePointerCancel);
+      window.removeEventListener('blur', this.handleWindowBlur);
     });
     this.loadStage(1);
 
@@ -91,15 +120,28 @@ export class GameScene extends Phaser.Scene {
       this.charging = false;
       this.shoot();
     });
-    this.input.keyboard?.on('keydown-ESC', () => this.togglePause());
-    this.input.keyboard?.on('keydown-R', () => this.restartStage());
-    this.input.keyboard?.on('keydown-SPACE', () => {
+    this.input.keyboard?.on('keydown-ESC', (event: KeyboardEvent) => {
+      if (!event.repeat) this.togglePause();
+    });
+    this.input.keyboard?.on('keydown-R', (event: KeyboardEvent) => {
+      if (!event.repeat) this.restartStage();
+    });
+    this.input.keyboard?.on('keydown-SPACE', (event: KeyboardEvent) => {
+      if (event.repeat) return;
+      event.preventDefault(); // keep Space from scrolling the page
       if (this.state === 'playing' && allBallsStopped(this.balls)) this.shoot();
     });
-    this.input.keyboard?.on('keydown-ONE', () => this.chooseUpgrade(0));
-    this.input.keyboard?.on('keydown-TWO', () => this.chooseUpgrade(1));
-    this.input.keyboard?.on('keydown-THREE', () => this.chooseUpgrade(2));
-    this.input.keyboard?.on('keydown-ENTER', () => {
+    this.input.keyboard?.on('keydown-ONE', (event: KeyboardEvent) => {
+      if (!event.repeat) this.chooseUpgrade(0);
+    });
+    this.input.keyboard?.on('keydown-TWO', (event: KeyboardEvent) => {
+      if (!event.repeat) this.chooseUpgrade(1);
+    });
+    this.input.keyboard?.on('keydown-THREE', (event: KeyboardEvent) => {
+      if (!event.repeat) this.chooseUpgrade(2);
+    });
+    this.input.keyboard?.on('keydown-ENTER', (event: KeyboardEvent) => {
+      if (event.repeat) return;
       if (this.state === 'failed' || this.state === 'victory') this.restartRun();
     });
   }
@@ -107,12 +149,15 @@ export class GameScene extends Phaser.Scene {
   update(_time: number, deltaMs: number): void {
     const dt = Math.min(deltaMs / 1000, 1 / 30);
     this.ambientTime += dt;
-    this.dust.forEach((particle, index) => {
-      particle.y -= dt * (4 + (index % 4));
-      particle.x += Math.sin(this.ambientTime * 0.7 + index) * dt * 2;
-      particle.setAlpha(0.12 + (Math.sin(this.ambientTime * 1.7 + index * 1.9) + 1) * 0.16);
-      if (particle.y < 12) particle.setPosition(35 + ((index * 137) % 890), 565 + (index % 23));
-    });
+    if (!this.reducedMotion) {
+      this.dust.forEach((particle, index) => {
+        particle.y -= dt * (4 + (index % 4));
+        particle.x += Math.sin(this.ambientTime * 0.7 + index) * dt * 2;
+        particle.setAlpha(0.12 + (Math.sin(this.ambientTime * 1.7 + index * 1.9) + 1) * 0.16);
+        if (particle.y < 12) particle.setPosition(35 + ((index * 137) % 890), 565 + (index % 23));
+      });
+      this.pocketRipples = this.pocketRipples.filter((ripple) => this.time.now - ripple.at < 480);
+    }
     if (this.state === 'playing') {
       if (this.charging) this.charge = Math.min(1, this.charge + dt * 0.65);
       stepPhysics(this.balls, TABLE, dt, {
@@ -121,7 +166,19 @@ export class GameScene extends Phaser.Scene {
           : undefined,
         restitution: Math.min(0.99, 0.91 + upgradeLevel(this.upgrades, 'rails') * 0.025),
         pocketRadius: 19 + upgradeLevel(this.upgrades, 'pockets') * 3,
-        onPocket: () => this.audio.play('pocket'),
+        onPocket: (ball) => {
+          this.audio.play('pocket');
+          // A capture can happen after the table already looked settled (for
+          // example when collision separation nudges a ball into a pocket in a
+          // later step). Re-arm shot evaluation so scratch and stage-clear
+          // logic always runs for it.
+          this.hasEvaluatedShot = false;
+          if (ball.number > 0) {
+            this.message = 'SUNK BALL ' + String(ball.number).padStart(2, '0');
+            this.messageUntil = this.time.now + 1100;
+            this.addPocketRipple(ball);
+          }
+        },
         onRail: () => this.audio.play('rail'),
         onBallCollision: () => this.audio.play('collision'),
       });
@@ -132,12 +189,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    const style = { fontFamily: 'monospace', fontSize: '10px', color: '#d4dfac', letterSpacing: 1 };
-    this.hud.status = this.add.text(28, 82, '', style).setDepth(100);
-    this.hud.stage = this.add.text(28, 100, '', { ...style, color: '#d4c2a7' }).setDepth(100);
-    this.hud.shots = this.add.text(28, 118, '', { ...style, color: '#d4c2a7' }).setDepth(100);
-    this.hud.objective = this.add.text(28, 136, '', { ...style, fontSize: '9px', color: '#e8c58e' }).setDepth(100);
-    this.hud.upgrades = this.add.text(932, 28, '', { ...style, fontSize: '9px', color: '#d4c2a7', align: 'right' }).setOrigin(1, 0).setDepth(100);
+    const style = { fontFamily: 'monospace', fontSize: '12px', color: '#d4dfac', letterSpacing: 1 };
+    this.hud.status = this.add.text(28, 80, '', style).setDepth(100);
+    this.hud.stage = this.add.text(28, 102, '', { ...style, color: '#d4c2a7', fontSize: '11px' }).setDepth(100);
+    this.hud.shots = this.add.text(28, 120, '', { ...style, color: '#d4c2a7', fontSize: '11px' }).setDepth(100);
+    this.hud.objective = this.add.text(28, 140, '', { ...style, fontSize: '10px', color: '#e8c58e' }).setDepth(100);
+    this.hud.upgrades = this.add.text(932, 28, '', { ...style, fontSize: '10px', color: '#d4c2a7', align: 'right' }).setOrigin(1, 0).setDepth(100);
   }
 
   private loadStage(number: number): void {
@@ -162,7 +219,7 @@ export class GameScene extends Phaser.Scene {
     this.ballLabels.forEach((label) => label.destroy());
     this.ballLabels = this.balls.map((ball) =>
       this.add.text(0, 0, String(ball.number), {
-        fontFamily: 'monospace', fontSize: '8px', color: '#342a20', fontStyle: 'bold',
+        fontFamily: 'monospace', fontSize: '9px', color: '#342a20', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(25).setVisible(false),
     );
   }
@@ -290,11 +347,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createAmbient(): void {
+    if (this.reducedMotion) return;
     for (let i = 0; i < 30; i += 1) {
       const particle = this.add.circle(30 + ((i * 137) % 900), 45 + ((i * 79) % 510),
         i % 5 === 0 ? 1.7 : 1, i % 3 === 0 ? 0xffd89b : 0xf3e8c8, 0.2).setDepth(4);
       this.dust.push(particle);
     }
+  }
+
+  private addPocketRipple(ball: Ball): void {
+    if (this.reducedMotion) return;
+    const p = this.project(ball.x, ball.y);
+    this.pocketRipples.push({ x: p.x, y: p.y, at: this.time.now });
+    if (this.pocketRipples.length > 6) this.pocketRipples.shift();
   }
 
   private paintStaticScene(): void {
@@ -376,6 +441,14 @@ export class GameScene extends Phaser.Scene {
     this.ballLabels.forEach((label, index) => {
       if (this.balls[index].sunk) label.setVisible(false);
     });
+
+    if (!this.reducedMotion) {
+      for (const ripple of this.pocketRipples) {
+        const t = Math.min(1, (this.time.now - ripple.at) / 480);
+        g.lineStyle(2, 0xe8c58e, 0.38 * (1 - t));
+        g.strokeCircle(ripple.x, ripple.y, 5 + t * 15);
+      }
+    }
 
     const stage = STAGES[this.stageNumber - 1];
     const remaining = this.balls.filter((ball) => ball.number > 0 && !ball.sunk).length;

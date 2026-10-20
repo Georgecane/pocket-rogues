@@ -91,3 +91,6 @@ footer { padding-top: 15px; border-top: 1px solid var(--line); color: #a29178; f
 /* The pause control is an action, not an off-state toggle. */
 .pause-toggle[aria-pressed="false"] { color: #e7d8bb; }
 .pause-toggle[aria-pressed="false"] .music-dot { background: #c8d9a4; box-shadow: 0 0 9px #c8d9a488; }
+/* While paused the control lights up warmly so the resting state is visible. */
+.pause-toggle[aria-pressed="true"] { color: #f2e2c4; background: #4a3c2c; border-color: #c2a16e; }
+.pause-toggle[aria-pressed="true"] .music-dot { background: #e8c58e; box-shadow: 0 0 9px #e8c58e88; }
